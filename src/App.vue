@@ -1,16 +1,22 @@
 <template>
   <div id="app">
+    <notifications group="main" />
     <Form />
+    <input-renderer label="Label" error="123">
+      <input />
+    </input-renderer>
   </div>
 </template>
 
 <script>
 import Form from "./components/Form.vue";
+import InputRenderer from "./components/InputRenderer.vue";
 
 export default {
   name: "App",
   components: {
     Form,
+    InputRenderer,
   },
 };
 </script>
