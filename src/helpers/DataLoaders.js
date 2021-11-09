@@ -1,5 +1,5 @@
 import citizenships from "../assets/data/citizenships.json";
-// import passportTypes from "../assets/data/passport-types.json"
+import passportTypes from "../assets/data/passport-types.json"
 
 // В реальном проекте эти функции будут, вероятно, основаны на fetch, а значит
 // их можно будет прерывать при помощи AbortController, и они будут поднимать исключения
@@ -12,7 +12,7 @@ class AbortError extends Error {
 }
 
 // Будем эмулировать "долгие" асинхронные функции
-export function loadCitizenshipsOptions(filter = "", controller = null) {
+export function loadCitizenships(filter = "", controller = null) {
     return new Promise((resolve, reject) => {
         if (controller) {
             controller.signal.addEventListener("abort", () => {
@@ -26,22 +26,19 @@ export function loadCitizenshipsOptions(filter = "", controller = null) {
         const loadItem = function () {
             if (i < citizenships.length) {
                 if (citizenships[i].nationality.toLowerCase().includes(lowerCaseFilter)) {
-                    res.push({
-                        value: citizenships[i].id,
-                        display: citizenships[i].nationality,
-                    });
+                    res.push(citizenships[i]);
                 }
                 i++;
             } else {
                 resolve(res);
             }
-            setTimeout(loadItem, 50);
+            setTimeout(loadItem, 20);
         }
         loadItem();
     });
 }
 
-export function loadCitizenshipsDisplayByValue(id, controller = null) {
+export function loadPassportTypes(filter = "", controller = null) {
     return new Promise((resolve, reject) => {
         if (controller) {
             controller.signal.addEventListener("abort", () => {
@@ -49,18 +46,19 @@ export function loadCitizenshipsDisplayByValue(id, controller = null) {
             });
         }
 
-        id = Number(id);
+        const lowerCaseFilter = filter.toLowerCase();
         let i = 0;
+        let res = [];
         const loadItem = function () {
-            if (i < citizenships.length) {
-                if (citizenships[i].id === id) {
-                    resolve(citizenships[i].nationality);
+            if (i < passportTypes.length) {
+                if (passportTypes[i].type.toLowerCase().includes(lowerCaseFilter)) {
+                    res.push(passportTypes[i]);
                 }
-                i++
+                i++;
             } else {
-                reject(new Error(`Гражданство с id=${id} не найдено`));
+                resolve(res);
             }
-            setTimeout(loadItem, 50);
+            setTimeout(loadItem, 20);
         }
         loadItem();
     });

@@ -2,38 +2,16 @@
   <div id="app">
     <notifications group="main" />
     <Form />
-    <input-renderer label="Label" error="123">
-      <input />
-    </input-renderer>
-    <input-renderer label="Label" error="123">
-      <select-input
-        :loadOptionsFunc="loadOptions"
-        :loadDisplayByValueFunc="loadDisplayByValue"
-        value="4530"
-      />
-    </input-renderer>
   </div>
 </template>
 
 <script>
 import Form from "./components/Form.vue";
-import InputRenderer from "./components/InputRenderer.vue";
-import SelectInput from "./components/SelectInput.vue";
-import {
-  loadCitizenshipsOptions,
-  loadCitizenshipsDisplayByValue,
-} from "./helpers/DataLoaders";
 
 export default {
   name: "App",
   components: {
     Form,
-    InputRenderer,
-    SelectInput,
-  },
-  methods: {
-    loadOptions: loadCitizenshipsOptions,
-    loadDisplayByValue: loadCitizenshipsDisplayByValue,
   },
 };
 </script>
