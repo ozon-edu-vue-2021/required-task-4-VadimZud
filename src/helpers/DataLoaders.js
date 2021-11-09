@@ -12,49 +12,56 @@ class AbortError extends Error {
 }
 
 // Будем эмулировать "долгие" асинхронные функции
-async function sleep(ms) {
-    await new Promise((resolve) => {
-        setTimeout(() => resolve(), ms);
+export function loadCitizenshipsOptions(filter = "", controller = null) {
+    return new Promise((resolve, reject) => {
+        if (controller) {
+            controller.signal.addEventListener("abort", () => {
+                reject(new AbortError("Операция прервана пользователем"));
+            });
+        }
+
+        const lowerCaseFilter = filter.toLowerCase();
+        let i = 0;
+        let res = [];
+        const loadItem = function () {
+            if (i < citizenships.length) {
+                if (citizenships[i].nationality.toLowerCase().includes(lowerCaseFilter)) {
+                    res.push({
+                        value: citizenships[i].id,
+                        display: citizenships[i].nationality,
+                    });
+                }
+                i++;
+            } else {
+                resolve(res);
+            }
+            setTimeout(loadItem, 50);
+        }
+        loadItem();
     });
 }
 
-async function filterArray(arr, callback, ms) {
-    let res = [];
-    for (let it of arr) {
-        if (callback(it)) {
-            res.push(it);
+export function loadCitizenshipsDisplayByValue(id, controller = null) {
+    return new Promise((resolve, reject) => {
+        if (controller) {
+            controller.signal.addEventListener("abort", () => {
+                reject(new AbortError("Операция прервана пользователем"));
+            });
         }
-        await sleep(ms);
-    }
-    return [];
-}
 
-async function mapArray(arr, callback, ms) {
-    let res = [];
-    for (let it of arr) {
-        res.push(callback(it));
-        await sleep(ms);
-    }
-    return res;
-}
-
-export async function loadCitizenshipsOptions(filter = "", controller = null) {
-    if (controller) {
-        controller.signal.addEventListener("abort", () => {
-            throw AbortError("Операция прервана пользователем");
-        });
-    }
-    const lowerCaseFilter = filter.toLowerCase();
-    let res = await filterArray(
-        citizenships,
-        (it) => it.toLowerCase().includes(lowerCaseFilter),
-        100
-    );
-    res = await mapArray(
-        res,
-        (it) => ({ value: it.id, display: it.nationality }),
-        100
-    );
-
-    return res;
+        id = Number(id);
+        let i = 0;
+        const loadItem = function () {
+            if (i < citizenships.length) {
+                if (citizenships[i].id === id) {
+                    resolve(citizenships[i].nationality);
+                }
+                i++
+            } else {
+                reject(new Error(`Гражданство с id=${id} не найдено`));
+            }
+            setTimeout(loadItem, 50);
+        }
+        loadItem();
+    });
 }

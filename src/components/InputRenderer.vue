@@ -8,7 +8,7 @@
         <slot></slot>
       </div>
     </label>
-    <div v-if="error" class="error">
+    <div v-if="error" class="error-text">
       {{ error }}
     </div>
   </div>
@@ -84,7 +84,7 @@ export default {
   margin-bottom: 5px;
 }
 
-.error {
+.error-text {
   color: red;
   font-size: 10px;
 }
