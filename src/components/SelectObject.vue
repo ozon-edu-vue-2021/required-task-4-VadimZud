@@ -6,11 +6,13 @@
       </div>
       <div
         class="display"
-        :class="{ error }"
+        :class="{ error, focused: displayFocused }"
         tabindex="0"
         ref="display"
+        @focus="ondisplayFocus"
+        @blur="ondisplayBlur($event)"
+        @click="ondisplayClick"
         @keydown.enter.prevent="activate"
-        @click="toogleActive"
       >
         <span class="display-text">{{ display }}</span>
       </div>
@@ -24,11 +26,11 @@
           type="text"
           v-model="filter"
           ref="filter"
-          @keydown.enter.prevent="selectOption(selected)"
-          @keydown.esc="deactivateWithoutBlur"
+          @blur="onfilterBlur($event)"
+          @keydown.enter.prevent="onfilterEnter"
+          @keydown.esc="onfilterEsc"
           @keydown.up="selectedPrev"
           @keydown.down="selectedNext"
-          @blur="deactivate"
         />
       </div>
       <div class="loader" v-if="isLoading">
@@ -43,7 +45,7 @@
           v-for="option in options"
           :key="toKey(option)"
           :class="{ selected: option === selected }"
-          @mousedown.left="selectOption(option)"
+          @mousedown.left.prevent="onoptionMousedown(option)"
         >
           {{ toDisplay(option) }}
         </div>
@@ -96,6 +98,7 @@ export default {
   },
   data() {
     return {
+      displayFocused: false,
       active: false,
       filter: "",
       options: [],
@@ -169,37 +172,45 @@ export default {
       this.timeout = setTimeout(this.loadOptions, 500);
     },
 
-    activate() {
-      if (!this.active) {
-        this.active = true;
-        this.activateOptions();
-        this.$refs.display.tabIndex = -1;
-        this.$nextTick(() => {
-          this.$refs.filter.focus();
-        });
+    ondisplayFocus() {
+      this.displayFocused = true;
+    },
+
+    ondisplayBlur(event) {
+      if (event.relatedTarget !== this.$refs.filter) {
+        this.displayFocused = false;
       }
+    },
+
+    activate() {
+      this.active = true;
+      this.activateOptions();
+      this.$refs.display.tabIndex = -1;
+      this.$nextTick(() => {
+        this.$refs.filter.focus();
+      });
     },
 
     deactivate() {
-      if (this.active) {
-        this.active = false;
-        this.deactivateOptions();
-        this.$refs.display.tabIndex = 0;
-      }
+      this.active = false;
+      this.deactivateOptions();
+      this.$refs.display.tabIndex = 0;
     },
 
-    deactivateWithoutBlur() {
+    ondisplayClick() {
       if (this.active) {
         this.deactivate();
-        this.$refs.display.focus();
+      } else {
+        this.activate();
       }
     },
 
-    toogleActive() {
-      if (this.active) {
-        this.deactivateWithoutBlur();
+    onfilterBlur(event) {
+      if (event.relatedTarget !== this.$refs.display) {
+        this.deactivate();
+        this.displayFocused = false;
       } else {
-        this.activate();
+        this.$refs.display.focus();
       }
     },
 
@@ -207,7 +218,17 @@ export default {
       if (option) {
         this.$emit("input", option);
       }
-      this.deactivateWithoutBlur();
+    },
+
+    onfilterEnter() {
+      this.selectOption(this.selected);
+      this.deactivate();
+      this.$refs.display.focus();
+    },
+
+    onfilterEsc() {
+      this.deactivate();
+      this.$refs.display.focus();
     },
 
     selectedPrev() {
@@ -231,6 +252,13 @@ export default {
         }
       }
     },
+
+    onoptionMousedown(option) {
+      this.selectOption(option);
+      this.$refs.display.tabIndex = 0;
+      this.$refs.display.focus();
+      this.deactivate();
+    },
   },
   watch: {
     filter() {
@@ -253,7 +281,7 @@ export default {
   border-color: red;
 }
 
-.display:focus {
+.display.focused {
   border-color: blue;
   outline: none;
 }

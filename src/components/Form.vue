@@ -1,6 +1,6 @@
 <template>
   <div class="form">
-    <form>
+    <form novalidate @submit.prevent="onsubmit">
       <fieldset>
         <legend>Личные данные</legend>
         <div class="row">
@@ -21,7 +21,7 @@
         </div>
         <div class="row">
           <input-renderer label="E-mail" :error="errors['email']">
-            <input type="text" v-model="form.email" />
+            <input type="email" v-model="form.email" />
           </input-renderer>
         </div>
       </fieldset>
@@ -49,12 +49,23 @@
           />
         </div>
         <template v-if="form.citizenship">
-          <div v-if="form.citizenship.id === 8604" class="row">
+          <div
+            v-if="form.citizenship && form.citizenship.id === 8604"
+            class="row"
+          >
             <input-renderer label="Серия" :error="errors['passportSeries']">
-              <input type="text" v-model="form.passportSeries" />
+              <input
+                type="number"
+                maxlength="4"
+                v-model="form.passportSeries"
+              />
             </input-renderer>
             <input-renderer label="Номер" :error="errors['passportNumber']">
-              <input type="text" v-model="form.passportNumber" />
+              <input
+                type="number"
+                maxlength="6"
+                v-model="form.passportNumber"
+              />
             </input-renderer>
             <input-renderer label="Дата выдачи" :error="errors['passportDate']">
               <input type="date" v-model="form.passportDate" />
@@ -134,6 +145,7 @@
           </input-renderer>
         </div>
       </fieldset>
+      <input type="submit" />
     </form>
   </div>
 </template>
@@ -175,6 +187,141 @@ export default {
   methods: {
     loadCitizenships,
     loadPassportTypes,
+
+    validateRequired(field) {
+      if (!this.form[field]) {
+        this.errors[field] = "Обязательное поле";
+        this.err = true;
+        return false;
+      }
+      return true;
+    },
+
+    validateCyrillic(field, required) {
+      if (required && !this.validateRequired(field)) {
+        return false;
+      }
+      if (this.form[field] && !/[а-яА-ЯёЁ]+/.test(this.form[field])) {
+        this.errors[field] = "Используйте кириллицу";
+        this.err = true;
+        return false;
+      }
+      return true;
+    },
+
+    validateLatin(field, required) {
+      if (required && !this.validateRequired(field)) {
+        return false;
+      }
+      if (this.form[field] && !/[a-zA-Z]+/.test(this.form[field])) {
+        this.errors[field] = "Используйте латиницу";
+        this.err = true;
+        return false;
+      }
+      return true;
+    },
+
+    validateDate(field, required) {
+      if (required && !this.validateRequired(field)) {
+        return false;
+      }
+      if (this.form[field]) {
+        const date = new Date(this.form[field]);
+        const now = new Date();
+        if (now - date < 0) {
+          this.errors[field] = "Дата не может быть в будущем";
+          this.err = true;
+          return false;
+        }
+      }
+      return true;
+    },
+
+    validateEmail(field, required) {
+      if (required && !this.validateRequired(field)) {
+        return false;
+      }
+      if (this.form[field] && !/.*@.*/.test(this.form[field])) {
+        this.errors[field] = "e-mail должен содержать @";
+        this.err = true;
+        return false;
+      }
+      return true;
+    },
+
+    validateNumber(field, length, required) {
+      if (required && !this.validateRequired(field)) {
+        return false;
+      }
+      if (
+        this.form[field] &&
+        !RegExp(`\\d{${length}}`).test(this.form[field])
+      ) {
+        this.errors[field] = `Введите ${length} цифр`;
+        this.err = true;
+        return false;
+      }
+      return true;
+    },
+
+    validateForm() {
+      this.err = false;
+      this.errors = {};
+
+      this.validateCyrillic("firstname", true);
+      this.validateCyrillic("secondname", true);
+      this.validateCyrillic("firstname", false);
+      this.validateDate("birthdate", true);
+      this.validateEmail("email", true);
+      this.validateRequired("citizenship");
+
+      if (this.form.citizenship) {
+        if (this.form.citizenship.id === 8604) {
+          this.validateNumber("passportSeries", 4, true);
+          this.validateNumber("passportNumber", 6, true);
+          this.validateDate("passportDate", true);
+          this.form.passportCountry = null;
+          this.form.passportType = null;
+          this.form.latinFirstname = "";
+          this.form.latinSecondname = "";
+        } else {
+          this.validateRequired("passportNumber");
+          this.validateRequired("passportCountry");
+          this.validateRequired("passportType");
+          this.validateLatin("latinFirstname", true);
+          this.validateLatin("latinSecondname", true);
+          this.form.passportSeries = "";
+          this.form.passportDate = "";
+        }
+      }
+
+      if (this.form.nameChanged === "yes") {
+        this.validateCyrillic("previousFirstname", false);
+        this.validateCyrillic("previousSecondname", false);
+      } else {
+        this.form.previousFirstname = "";
+        this.form.previousSecondname = "";
+      }
+    },
+
+    onsubmit() {
+      this.validateForm();
+      if (this.err) {
+        this.$notify({
+          group: "main",
+          type: "error",
+          title: "Данные не отправлены",
+          text: "Исправьте ошибки, указанные в форме",
+        });
+      } else {
+        this.$notify({
+          group: "main",
+          title: "Данные отправлены",
+          text: "Посмотрите в консоль",
+        });
+        console.log(JSON.stringify(this.form));
+      }
+    },
   },
   components: {
     InputRenderer,
@@ -187,8 +334,5 @@ export default {
 .row {
   display: flex;
   gap: 10px;
-}
-
-.form {
 }
 </style>
